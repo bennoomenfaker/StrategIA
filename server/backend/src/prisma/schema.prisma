@@ -1,0 +1,441 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== ENUMS ====================
+
+enum UserType {
+  INDIVIDUEL
+  ORGANISATION
+}
+
+enum UserStatus {
+  ACTIF
+  INACTIF
+  SUSPENDU
+}
+
+enum OrganizationRole {
+  OWNER
+  TEAM_MEMBER
+  VIEWER
+}
+
+enum MemberStatus {
+  ACTIVE
+  PENDING
+  INACTIVE
+}
+
+enum VeilleType {
+  TECHNOLOGIQUE
+  CONCURRENTIELLE
+  REGLEMENTAIRE
+  MARCHES
+  SCIENTIFIQUE
+  MEDIAS
+  CUSTOM
+}
+
+enum Frequency {
+  ON_DEMAND
+  DAILY
+  WEEKLY
+  MONTHLY
+}
+
+enum SourceType {
+  RSS
+  WEB
+  API
+  PDF
+}
+
+enum KeywordType {
+  INCLUDE
+  EXCLUDE
+}
+
+enum HypothesisStatus {
+  OPEN
+  VALIDATED
+  INVALIDATED
+  IN_PROGRESS
+}
+
+enum PerimeterType {
+  GEOGRAPHIC
+  SECTORIAL
+}
+
+enum JobStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  RETRY
+}
+
+// ==================== AUTH & USERS ====================
+
+model User {
+  id            String        @id @default(cuid())
+  email         String        @unique
+  nom           String
+  password      String
+  type          UserType
+  status        UserStatus    @default(ACTIF)
+  refreshToken  String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  ownedProjects     Project[]           @relation("OwnedProjects")
+  organizations     OrganizationMember[]
+  ownedOrganizations Organization[]     @relation("Owner")
+  activityLogs      ActivityLog[]
+  hypotheses        Hypothesis[]        @relation("UserHypotheses")
+  collectedRawItems RawItem[]           @relation("CollectedRawItems")
+  validatedHypotheses Hypothesis[]      @relation("ValidatedBy")
+  refreshTokens     RefreshToken[]
+
+  @@index([email])
+  @@index([type])
+  @@index([status])
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([token])
+  @@index([expiresAt])
+  @@map("refresh_tokens")
+}
+
+model ActivityLog {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  action     String
+  entityType String
+  entityId   String
+  metadata   Json?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@map("activity_logs")
+}
+
+// ==================== ORGANIZATIONS ====================
+
+model Organization {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  ownerId   String
+  owner     User     @relation("Owner", fields: [ownerId], references: [id])
+  logo      String?
+  website   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  members  OrganizationMember[]
+  projects Project[]
+
+  @@index([slug])
+  @@map("organizations")
+}
+
+model OrganizationMember {
+  id             String           @id @default(cuid())
+  organizationId String
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User             @relation(fields: [userId], references: [id])
+  role           OrganizationRole
+  status         MemberStatus     @default(ACTIVE)
+  invitedBy      String?
+  joinedAt       DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  @@unique([organizationId, userId])
+  @@index([organizationId])
+  @@index([userId])
+  @@index([role])
+  @@index([status])
+  @@map("organization_members")
+}
+
+// ==================== PROJECTS (CORE ENTITY) ====================
+
+model Project {
+  id             String      @id @default(cuid())
+  name           String
+  description    String?
+  slug           String      @unique
+  veilleType     VeilleType  @default(CUSTOM)
+  startDate      DateTime?
+  endDate        DateTime?
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  ownerUserId    String?
+  ownerUser      User?        @relation("OwnedProjects", fields: [ownerUserId], references: [id])
+  folderId       String?
+  isArchived     Boolean     @default(false)
+  deletedAt      DateTime?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  objectives      Objective[]
+  perimeters      Perimeter[]
+  rawItems        RawItem[]
+
+  @@index([organizationId])
+  @@index([ownerUserId])
+  @@index([slug])
+  @@index([deletedAt])
+  @@index([isArchived])
+  @@map("projects")
+}
+
+// ==================== STRATEGIC STRUCTURE ====================
+
+model Objective {
+  id          String   @id @default(cuid())
+  content     String   @db.Text
+  priority    Int      @default(1)
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  axes Axis[]
+
+  @@index([projectId])
+  @@index([priority])
+  @@map("objectives")
+}
+
+model Axis {
+  id          String    @id @default(cuid())
+  name        String
+  description String?   @db.Text
+  priority    Int       @default(1)
+  objectiveId String
+  objective   Objective @relation(fields: [objectiveId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  hypotheses Hypothesis[]
+
+  @@index([objectiveId])
+  @@index([priority])
+  @@map("axes")
+}
+
+model Hypothesis {
+  id              String           @id @default(cuid())
+  content         String           @db.Text
+  priority        Int              @default(1)
+  status          HypothesisStatus @default(OPEN)
+  validationScore Float?
+  validatedAt     DateTime?
+  validatedBy     String?
+  validator       User?            @relation("ValidatedBy", fields: [validatedBy], references: [id])
+  axisId          String
+  axis            Axis             @relation(fields: [axisId], references: [id], onDelete: Cascade)
+  createdBy       String?
+  creator         User?            @relation("UserHypotheses", fields: [createdBy], references: [id])
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  perimeters      HypothesisPerimeter[]
+  collectionPlans CollectionPlan[]
+
+  @@index([axisId])
+  @@index([status])
+  @@index([priority])
+  @@map("hypotheses")
+}
+
+// ==================== PERIMETERS (HIERARCHICAL) ====================
+
+model Perimeter {
+  id         String         @id @default(cuid())
+  name       String
+  type       PerimeterType
+  projectId  String
+  project    Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  parentId   String?
+  parent     Perimeter?     @relation("ParentChild", fields: [parentId], references: [id])
+  children   Perimeter[]    @relation("ParentChild")
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+
+  hypothesisLinks HypothesisPerimeter[]
+
+  @@index([projectId])
+  @@index([parentId])
+  @@index([projectId, parentId])
+  @@index([type])
+  @@map("perimeters")
+}
+
+model HypothesisPerimeter {
+  id           String     @id @default(cuid())
+  hypothesisId String
+  hypothesis   Hypothesis @relation(fields: [hypothesisId], references: [id], onDelete: Cascade)
+  perimeterId  String
+  perimeter    Perimeter  @relation(fields: [perimeterId], references: [id], onDelete: Cascade)
+  createdAt    DateTime   @default(now())
+
+  @@unique([hypothesisId, perimeterId])
+  @@index([hypothesisId])
+  @@index([perimeterId])
+  @@map("hypothesis_perimeters")
+}
+
+// ==================== COLLECTION PLANS (CORE INNOVATION) ====================
+
+model CollectionPlan {
+  id                    String     @id @default(cuid())
+  question              String     @db.Text
+  frequency             Frequency  @default(DAILY)
+  cronExpression        String?
+  collectionStartDate   DateTime?
+  collectionEndDate     DateTime?
+  isActive              Boolean    @default(true)
+  lastRunAt             DateTime?
+  nextRunAt             DateTime?
+  hypothesisId          String
+  hypothesis            Hypothesis @relation(fields: [hypothesisId], references: [id], onDelete: Cascade)
+  createdAt             DateTime   @default(now())
+  updatedAt             DateTime   @updatedAt
+
+  sources  CollectionPlanSource[]
+  keywords CollectionPlanKeyword[]
+  rawItems RawItem[]
+  jobs     CollectionJob[]
+
+  @@index([hypothesisId])
+  @@index([isActive])
+  @@index([nextRunAt])
+  @@index([frequency])
+  @@map("collection_plans")
+}
+
+model CollectionPlanSource {
+  id               String         @id @default(cuid())
+  collectionPlanId String
+  collectionPlan   CollectionPlan @relation(fields: [collectionPlanId], references: [id], onDelete: Cascade)
+  sourceType       SourceType
+  sourceLabel      String
+  sourceUrl        String         @db.Text
+  isActive         Boolean        @default(true)
+  lastFetchedAt    DateTime?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  @@unique([collectionPlanId, sourceUrl])
+  @@index([collectionPlanId])
+  @@index([sourceType])
+  @@index([isActive])
+  @@map("collection_plan_sources")
+}
+
+model CollectionPlanKeyword {
+  id               String         @id @default(cuid())
+  collectionPlanId String
+  collectionPlan   CollectionPlan @relation(fields: [collectionPlanId], references: [id], onDelete: Cascade)
+  keyword          String
+  keywordType      KeywordType    @default(INCLUDE)
+  createdAt        DateTime       @default(now())
+
+  @@unique([collectionPlanId, keyword])
+  @@index([collectionPlanId])
+  @@index([keyword])
+  @@index([keywordType])
+  @@map("collection_plan_keywords")
+}
+
+// ==================== RAW DATA STORAGE ====================
+
+model RawItem {
+  id               String         @id @default(cuid())
+  title            String?
+  contentRaw       String?        @db.Text
+  contentCleaned   String?        @db.Text
+  summary          String?        @db.Text
+  sourceType       SourceType
+  sourceUrl        String         @db.Text
+  sourceName       String?
+  publishedAt      DateTime?
+  fetchedAt        DateTime       @default(now())
+  hash             String
+  isDuplicate      Boolean        @default(false)
+  duplicateOfId    String?
+  duplicateOf      RawItem?       @relation("RawItemDuplicate", fields: [duplicateOfId], references: [id])
+  duplicates       RawItem[]      @relation("RawItemDuplicate")
+  language         String?
+  wordCount        Int?
+  metadata         Json?
+  projectId        String
+  project          Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  collectionPlanId String
+  collectionPlan   CollectionPlan @relation(fields: [collectionPlanId], references: [id], onDelete: Cascade)
+  collectedBy      String?
+  collector        User?          @relation("CollectedRawItems", fields: [collectedBy], references: [id])
+  processedAt      DateTime?
+  createdAt        DateTime       @default(now())
+
+  entities        Json?
+  classification  String?
+  sentimentScore  Float?
+
+  @@unique([hash, projectId])
+  @@index([projectId])
+  @@index([collectionPlanId])
+  @@index([sourceType])
+  @@index([publishedAt])
+  @@index([fetchedAt])
+  @@index([isDuplicate])
+  @@index([projectId, createdAt])
+  @@index([collectionPlanId, fetchedAt])
+  @@index([hash])
+  @@map("raw_items")
+}
+
+// ==================== COLLECTION JOBS (QUEUE) ====================
+
+model CollectionJob {
+  id               String         @id @default(cuid())
+  collectionPlanId String
+  collectionPlan   CollectionPlan @relation(fields: [collectionPlanId], references: [id], onDelete: Cascade)
+  status           JobStatus      @default(PENDING)
+  itemsFound       Int            @default(0)
+  itemsStored      Int            @default(0)
+  errorMessage     String?        @db.Text
+  startedAt        DateTime?
+  completedAt      DateTime?
+  retryCount       Int            @default(0)
+  createdAt        DateTime       @default(now())
+
+  @@index([collectionPlanId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("collection_jobs")
+}

@@ -1,0 +1,4 @@
+export enum UserType {
+  INDIVIDUEL = 'INDIVIDUEL',
+  ORGANISATION = 'ORGANISATION',
+}

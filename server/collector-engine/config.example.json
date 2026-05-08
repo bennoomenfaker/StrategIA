@@ -1,0 +1,36 @@
+{
+  "sources": [
+    {
+      "url": "https://www.lemonde.fr",
+      "source_type": "web",
+      "include_keywords": ["intelligence artificielle", "IA", "machine learning", "technologie"],
+      "exclude_keywords": ["sport", "météo", "people"],
+      "max_depth": 5,
+      "crawl_delay": 1.0
+    },
+    {
+      "url": "https://feeds.feedburner.com/TechCrunch/",
+      "source_type": "rss",
+      "include_keywords": ["AI", "startup", "technology"],
+      "exclude_keywords": [],
+      "max_depth": 1,
+      "crawl_delay": 0.5
+    }
+  ],
+  "objectives": [
+    "Surveiller les innovations en intelligence artificielle",
+    "Identifier les nouveaux acteurs du marché tech"
+  ],
+  "hypotheses": [
+    "L'IA générative transforme le secteur de la santé",
+    "Les startups européennes de l'IA rivalisent avec les géants américains"
+  ],
+  "research_questions": [
+    "Quelles sont les dernières avancées en IA pour le diagnostic médical ?",
+    "Quels sont les montants des dernières levées de fonds en IA ?"
+  ],
+  "semantic_threshold": 0.65,
+  "semantic_model": "all-MiniLM-L6-v2",
+  "max_pages_per_source": 100,
+  "output_format": "jsonl"
+}

@@ -1,0 +1,6 @@
+export enum HypothesisStatus {
+  OPEN = 'OPEN',
+  VALIDATED = 'VALIDATED',
+  INVALIDATED = 'INVALIDATED',
+  IN_PROGRESS = 'IN_PROGRESS',
+}

@@ -1,0 +1,97 @@
+version: '3.8'
+
+services:
+  # postgres:
+  #   image: postgres:15-alpine
+  #   container_name: strategia-postgres
+  #   restart: always
+  #   environment:
+  #     POSTGRES_USER: root
+  #     POSTGRES_PASSWORD: root
+  #     POSTGRES_DB: strategia_db
+  #   ports:
+  #     - '5432:5432'
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #   healthcheck:
+  #     test: ['CMD-SHELL', 'pg_isready -U root']
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: strategia-redis
+    restart: always
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: strategia-backend
+    restart: always
+    environment:
+      NODE_ENV: production
+      # PostgreSQL local (pas en Docker)
+      DATABASE_URL: postgresql://root:root@host.docker.internal:5432/strategia_db
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      COLLECTOR_ENGINE_URL: http://collector-engine:8000
+    ports:
+      - '3000:3000'
+    # depends_on:
+    #   postgres:
+    #     condition: service_healthy
+    depends_on:
+      redis:
+        condition: service_healthy
+    command: ['node', 'dist/main']
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  collector-engine:
+    build:
+      context: ./collector-engine
+      dockerfile: Dockerfile
+    container_name: strategia-collector
+    restart: always
+    environment:
+      API_URL: http://backend:3000/api
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    ports:
+      - '8000:8000'
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - collector_data:/app/data
+    command: ['scrapy', 'crawl', 'strategic_web', '-a', 'mode=continuous']
+
+  frontend:
+    build:
+      context: ../../client
+      dockerfile: Dockerfile
+    container_name: strategia-frontend
+    restart: always
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:3000/api
+      NEXT_PUBLIC_COLLECTOR_URL: http://localhost:8000
+    ports:
+      - '3001:3001'
+    depends_on:
+      - backend
+
+volumes:
+  # postgres_data:
+  redis_data:
+  collector_data:
