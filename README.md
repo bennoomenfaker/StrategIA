@@ -58,19 +58,19 @@ docker-compose up -d
 | Redis | localhost:6379 | Cache & Queue |
 
 
-1. 启动Redis（队列和缓存）
+1. Redis（）
 docker run -d -p 6379:6379 redis
-# 或本地安装：sudo systemctl start redis
-2. 启动后端（NestJS + BullMQ + Swagger）
+# ：sudo systemctl start redis
+2. （NestJS + BullMQ + Swagger）
 cd /home/himawari/workSpace/StrategIA/server/backend
 npm run start:dev
-访问 Swagger：http://localhost:3000/api/docs
-3. 启动采集引擎API（Python FastAPI）
+ Swagger：http://localhost:3000/api/docs
+3. （Python FastAPI）
 cd /home/himawari/workSpace/StrategIA/server/collector-engine
 pip install fastapi uvicorn
 python server.py
-访问采集引擎：http://localhost:8000
-4. 启动前端（Next.js）
+：http://localhost:8000
+4. （Next.js）
 cd /home/himawari/workSpace/StrategIA/client
 npm run dev
 
