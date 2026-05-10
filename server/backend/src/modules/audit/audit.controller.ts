@@ -1,4 +1,4 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import { AuditService } from './audit.service';
@@ -28,7 +28,7 @@ export class AuditController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get logs for entity' })
-  async findByEntity(@Query('type') entityType: string, @Query('id') entityId: string) {
+  async findByEntity(@Param('type') entityType: string, @Param('id') entityId: string) {
     return this.auditService.findByEntity(entityType, entityId);
   }
 }

@@ -37,6 +37,8 @@ async function bootstrap() {
     .addTag('connectors', 'Data source connectors (RSS, Web, PDF)')
     .addTag('raw-data', 'Collected raw data')
     .addTag('audit', 'Activity logging & audit trail')
+    .addTag('analytics', 'Real-time analytics & statistics')
+    .addTag('feed', 'Activity feed & recent items')
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
@@ -61,7 +63,9 @@ async function bootstrap() {
   app.useGlobalInterceptors(new LoggingInterceptor());
 
   app.enableCors({
-    origin: process.env.APP_URL || 'http://localhost:3001',
+    origin: process.env.NODE_ENV === 'production'
+      ? process.env.APP_URL || 'http://localhost:6001'
+      : true,
     credentials: true,
   });
 

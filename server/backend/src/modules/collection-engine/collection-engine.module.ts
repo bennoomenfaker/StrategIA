@@ -1,27 +1,28 @@
 import { Module } from '@nestjs/common';
-import { BullModule } from '@nestjs/bullmq';
-import { HttpModule } from '@nestjs/axios';
 import { CollectionEngineService } from './collection-engine.service';
-import { CollectionQueueProcessor } from './processors/collection-queue.processor';
+import { CollectionEngineController } from './collection-engine.controller';
+import { WebConnectorService } from './connectors/web.connector';
+import { RssConnectorService } from './connectors/rss.connector';
+import { PdfConnectorService } from './connectors/pdf.connector';
 import { FilterService } from './services/filter.service';
 import { DeduplicationService } from './services/deduplication.service';
-import { RetryService } from './services/retry.service';
-import { CollectionSchedulerService } from './scheduler/collection-scheduler.service';
+import { TextNormalizerService } from './services/text-normalizer.service';
+import { WordAnalyzerService } from './services/word-analyzer.service';
+import { RawItemService } from './services/raw-item.service';
 
 @Module({
-  imports: [
-    BullModule.registerQueue({
-      name: 'collection-queue',
-    }),
-    HttpModule,
-  ],
+  imports: [],
+  controllers: [CollectionEngineController],
   providers: [
     CollectionEngineService,
-    CollectionQueueProcessor,
+    WebConnectorService,
+    RssConnectorService,
+    PdfConnectorService,
     FilterService,
     DeduplicationService,
-    RetryService,
-    CollectionSchedulerService,
+    TextNormalizerService,
+    WordAnalyzerService,
+    RawItemService,
   ],
   exports: [CollectionEngineService],
 })

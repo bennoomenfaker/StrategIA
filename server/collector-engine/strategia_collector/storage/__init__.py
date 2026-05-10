@@ -1,1 +1,0 @@
-from strategia_collector.storage.raw_item_service import RawItemService

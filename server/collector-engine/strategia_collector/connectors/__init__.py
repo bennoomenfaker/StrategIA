@@ -1,3 +1,0 @@
-from strategia_collector.connectors.web_connector import WebConnector
-from strategia_collector.connectors.rss_connector import RssConnector
-from strategia_collector.connectors.pdf_connector import PdfConnector

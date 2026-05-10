@@ -252,12 +252,12 @@ export default function ProjectPlansPage() {
               <CardContent>
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <div className="space-y-2">
-                    <Label htmlFor="name">Plan Name</Label>
+                    <Label htmlFor="question">Plan Question</Label>
                     <Input
-                      id="name"
-                      value={form.name}
-                      onChange={(e) => setForm({ ...form, name: e.target.value })}
-                      placeholder="e.g., AI Technology Monitoring"
+                      id="question"
+                      value={form.question}
+                      onChange={(e) => setForm({ ...form, question: e.target.value })}
+                      placeholder="e.g., What are the latest AI developments?"
                       required
                     />
                   </div>

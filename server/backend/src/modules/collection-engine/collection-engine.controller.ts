@@ -5,23 +5,26 @@ import { CollectionEngineService } from './collection-engine.service';
 
 @ApiTags('collection-engine')
 @Controller('collection-engine')
+@UseGuards(JwtAuthGuard)
+@ApiBearerAuth()
 export class CollectionEngineController {
   constructor(private engineService: CollectionEngineService) {}
 
   @Post('trigger/:planId')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Manually trigger collection for a plan' })
+  @ApiOperation({ summary: 'Trigger collection for a plan (background)' })
   async triggerManual(@Param('planId') planId: string) {
-    return this.engineService.triggerCollection(planId);
+    return this.engineService.triggerCollection(planId, false);
+  }
+
+  @Post('run/:planId')
+  @ApiOperation({ summary: 'Run collection synchronously' })
+  async runNow(@Param('planId') planId: string) {
+    return this.engineService.triggerCollection(planId, true);
   }
 
   @Post('trigger-all')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
   @ApiOperation({ summary: 'Trigger all active plans' })
   async triggerAll() {
-    // Will be picked up by the cron job
     return { message: 'All active plans will be checked shortly' };
   }
 }

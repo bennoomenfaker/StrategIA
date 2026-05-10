@@ -322,9 +322,13 @@ const config = new DocumentBuilder()
 │  │  └──────────────────┘ └──────────────────┘ └──────────────────┘  │       │
 │  └──────────────────────────────────────────────────────────────────┘       │
 │                                                                              │
-│  ┌──────────────────┐ ┌──────────────────┐                                   │
-│  │  RAW DATA MODULE │ │  AUDIT MODULE     │                                   │
-│  └──────────────────┘ └──────────────────┘                                   │
+│  ┌──────────────────┐ ┌──────────────────┐ ┌──────────────────┐               │
+│  │  RAW DATA MODULE │ │  AUDIT MODULE     │ │  ANALYTICS       │               │
+│  └──────────────────┘ └──────────────────┘ │  MODULE          │               │
+│                                             └──────────────────┘               │
+│  ┌──────────────────┐                                                         │
+│  │  FEED MODULE      │                                                         │
+│  └──────────────────┘                                                         │
 └─────────────────────────────────────────────────────────────────────────────┘
                                       │
                     ┌─────────────────┼─────────────────┐
@@ -394,8 +398,10 @@ strategia-backend/
 │       ├── collection-plans/
 │       ├── collection-engine/
 │       ├── connectors/
-│       ├── raw-data/
-│       └── audit/
+│   ├── raw-data/
+│   ├── audit/
+│   ├── analytics/
+│   └── feed/
 ```
 
 ---
@@ -438,6 +444,8 @@ module-name/
 | **connectors** | RSS, Web scraping, PDF extraction |
 | **raw-data** | Stockage données brutes collectées |
 | **audit** | Logs d'activité, traçabilité |
+| **analytics** | Statistiques temps réel (projets, objectifs, collectes, jobs) |
+| **feed** | Flux d'activité paginé + items récents |
 
 ---
 
@@ -1359,6 +1367,8 @@ COLLECTOR_PORT=8000 python server.py
 - `POST /collect` - Déclencher une collecte (reçoi `planId`, `sources`, `keywords`)
 - `GET /collect/{plan_id}/status` - Statut de la collecte
 - `POST /collect/config` - Collecte via fichier de config
+- `POST /scrape/preview` - Scraper une URL unique et retourner le contenu extrait (pour preview/validation)
+- `POST /ai/analyze` - Analyser un texte (sentiment, entités, classification)
 - `GET /health` - Health check
 
 #### 2. Mode CLI (pour tests manuels)
@@ -1373,6 +1383,10 @@ python run.py web "https://www.techcrunch.com,https://example.com"
 
 # RSS uniquement
 python run.py rss "https://feeds.feedburner.com/TechCrunch"
+
+# TEST scraping une URL spécifique (debug)
+python run.py test "https://www.example.com/article"
+# Retourne : titre, contenu extrait, score qualité, durée, validation
 ```
 
 ### Configuration de l'URL du Collector
@@ -1388,6 +1402,9 @@ COLLECTOR_URL=http://localhost:8000
 # Test health check
 curl http://localhost:8000/health
 
+# Test scrape preview
+curl -X POST "http://localhost:8000/scrape/preview?url=https://www.techcrunch.com&max_chars=2000"
+
 # Test collection
 curl -X POST http://localhost:8000/collect \
   -H "Content-Type: application/json" \
@@ -1399,6 +1416,48 @@ curl -X POST http://localhost:8000/collect \
     "keywords": ["AI", "startup"]
   }'
 ```
+
+---
+
+## 📡 NOUVEAUX ENDPOINTS API
+
+### 1. Analytics (`GET /api/analytics/stats`)
+Retourne des statistiques réelles depuis la base de données (plus de données mockées).
+
+**Query parameters :** `organizationId` (optionnel)
+
+**Retourne :**
+| Champ | Description |
+|-------|-------------|
+| `totalProjects` | Nombre total de projets |
+| `totalObjectives` | Nombre d'objectifs |
+| `totalAxes` | Nombre d'axes |
+| `totalHypotheses` | Nombre d'hypothèses |
+| `activeCollectionPlans` | Plans de collecte actifs |
+| `totalRawItems` | Total items collectés |
+| `rawItemsByMonth` | Items par mois `[{month, count}]` |
+| `topSources` | Distribution par type de source `[{name, value, count}]` |
+| `jobsStats` | Stats des jobs `{total, succeeded, failed, successRate}` |
+
+### 2. Feed - Activités (`GET /api/feed/activities`)
+Flux d'activité paginé avec filtres.
+
+**Query parameters :** `projectId`, `entityType`, `startDate`, `endDate`, `page`, `limit`
+
+**Retourne :** `{ items, total, page, limit, totalPages }`
+
+### 3. Feed - Raw Items (`GET /api/feed/raw-items`)
+Derniers items collectés pour le flux.
+
+**Query parameters :** `projectId`, `limit`
+
+### 4. Audit - Logs (`GET /api/audit`)
+Logs d'activité avec pagination et filtres (corrigé : le controller est maintenant activé).
+
+### 5. Scrape Preview (`POST /api/scrape/preview`)
+Scrape une URL unique et retourne le contenu extrait + validation qualité.
+
+**Query parameters :** `url`, `max_chars` (défaut: 5000)
 
 ---
 

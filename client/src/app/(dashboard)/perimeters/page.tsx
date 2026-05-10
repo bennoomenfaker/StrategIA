@@ -64,22 +64,17 @@ export default function PerimetersPage() {
   };
 
   const buildTree = (items: any[]): any[] => {
-    const map = new Map();
+    const map: Record<string, any> = {};
     const roots: any[] = [];
 
-    // Initialize map
     items.forEach(item => {
-      map.set(item.id, { ...item, children: [] });
+      map[item.id] = { ...item, children: [] };
     });
 
-    // Build tree
     items.forEach(item => {
-      const node = map.get(item.id);
-      if (item.parentId && map.has(item.parentId)) {
-        const parent = map.get(item.parentId);
-        if (parent) {
-          parent.children.push(node);
-        }
+      const node = map[item.id];
+      if (item.parentId && map[item.parentId]) {
+        map[item.parentId].children.push(node);
       } else {
         roots.push(node);
       }

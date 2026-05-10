@@ -110,36 +110,14 @@ export default function CollectionPlanDetailPage() {
     if (!plan) return;
     setRunning(true);
     try {
-      const sources = (plan.sources || [])
-        .filter(s => s.isActive)
-        .map(s => ({
-          url: s.sourceUrl,
-          type: s.sourceType.toLowerCase(),
-          label: s.sourceLabel,
-        }));
-
-      const response = await fetch(`http://localhost:8000/collect?sync=true`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          planId: plan.id,
-          sources,
-          keywords: (plan.keywords || []).map(k => ({ word: k.keyword, type: k.keywordType })),
-        }),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(JSON.stringify(error.detail) || 'Failed');
-      }
-
-      const result = await response.json();
-      alert(`Collection triggered! Items found: ${result.itemsFound || 0}`);
+      const result = await api.post(`/collection-engine/run/${plan.id}`);
+      const data = result.data;
+      alert(`Collection terminée ! ${data.collected || 0} items collectés`);
       fetchResults();
       fetchJobs();
     } catch (err: any) {
       console.error('Failed to trigger collection:', err);
-      alert(err.message || 'Failed to trigger collection.');
+      alert(err.message || 'Échec du déclenchement de la collecte');
     } finally {
       setRunning(false);
     }

@@ -20,6 +20,8 @@ import { CollectionEngineModule } from './modules/collection-engine/collection-e
 import { ConnectorsModule } from './modules/connectors/connectors.module';
 import { RawDataModule } from './modules/raw-data/raw-data.module';
 import { AuditModule } from './modules/audit/audit.module';
+import { AnalyticsModule } from './modules/analytics/analytics.module';
+import { FeedModule } from './modules/feed/feed.module';
 
 @Module({
   imports: [
@@ -49,6 +51,8 @@ import { AuditModule } from './modules/audit/audit.module';
     ConnectorsModule,
     RawDataModule,
     AuditModule,
+    AnalyticsModule,
+    FeedModule,
   ],
 })
 export class AppModule {}

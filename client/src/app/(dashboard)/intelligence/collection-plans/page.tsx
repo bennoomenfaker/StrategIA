@@ -148,50 +148,13 @@ export default function CollectionPlansPage() {
   const handleRunNow = async (id: string) => {
     setRunningPlanId(id);
     try {
-      // Fetch plan details first
-      const planRes = await api.get(`/collection-plans/${id}?include=sources,keywords`);
-      const plan = planRes.data.data || planRes.data;
-      
-      if (!plan.sources || plan.sources.length === 0) {
-        alert("No sources configured for this plan. Please add sources first.");
-        setRunningPlanId(null);
-        return;
-      }
-      
-      // Transform sources to match Python API format
-      const sources = (plan.sources || [])
-        .filter((s: any) => s.isActive)
-        .map((s: any) => ({
-          url: s.sourceUrl,
-          type: s.sourceType.toLowerCase(),
-          label: s.sourceLabel,
-        }));
-      
-      // Call Python collector engine directly
-      const response = await fetch(`http://localhost:8000/collect?sync=true`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          planId: id,
-          sources,
-          keywords: (plan.keywords || []).map((k: any) => ({ word: k.keyword, type: k.keywordType })),
-        }),
-      });
-      
-      if (!response.ok) {
-        const error = await response.json();
-        console.error("Python API error:", error);
-        throw new Error(JSON.stringify(error.detail) || 'Failed');
-      }
-      
-      const result = await response.json();
-      alert(`Collection completed! Items found: ${result.itemsFound || 0}, Stored: ${result.itemsStored || 0}`);
-      
-      // Refresh the list
+      const result = await api.post(`/collection-engine/run/${id}`);
+      const data = result.data;
+      alert(`Collection terminée ! ${data.collected || 0} items collectés`);
       fetchData();
     } catch (err: any) {
       console.error("Failed to trigger collection:", err);
-      alert(err.message || "Failed to trigger collection. Make sure Python collector is running on port 8000");
+      alert(err.message || "Échec du déclenchement de la collecte");
     } finally {
       setRunningPlanId(null);
     }
