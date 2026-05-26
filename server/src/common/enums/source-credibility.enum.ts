@@ -1,0 +1,7 @@
+export enum SourceCredibility {
+  NON_VERIFIE = 'NON_VERIFIE',
+  FAIBLE = 'FAIBLE',
+  MOYENNE = 'MOYENNE',
+  ELEVEE = 'ELEVEE',
+  OFFICIELLE = 'OFFICIELLE',
+}

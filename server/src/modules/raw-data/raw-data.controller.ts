@@ -10,6 +10,8 @@ export class RawDataController {
   constructor(private service: RawDataService) {}
 
   @Get()
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Query collected data' })
   async findAll(@Query() filters: FilterRawDataDto) {
     return this.service.findAll(filters);

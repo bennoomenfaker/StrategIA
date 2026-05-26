@@ -1,3 +1,19 @@
+/**
+ * FICHIER: web.connector.ts
+ *
+ * RÔLE: Connecteur web qui scrape les pages HTML (navigation, extraction contenu, détection date).
+ *
+ * RESPONSABILITÉS:
+ * - Scraper les pages web avec retry (max 3) et délai de politesse (500ms)
+ * - Extraire le titre, le contenu et la date de publication
+ * - Naviguer jusqu'à 5 pages (même domaine, URLs pertinentes)
+ * - Ignorer les sections non-contenu (sidebar, commentaires, pub)
+ *
+ * FLUX:
+ * - CollectionEngineService → WebConnectorService.fetch(url) → CollectedData[]
+ *
+ * EXEMPLE: Une URL de blog est scrapée → 3 pages explorées → 3 articles extraits.
+ */
 import { Injectable, Logger } from '@nestjs/common';
 import axios from 'axios';
 import * as cheerio from 'cheerio';
@@ -116,7 +132,6 @@ export class WebConnectorService implements IConnector {
         sourceType: 'WEB',
         title,
         description: content.substring(0, 200),
-        content,
         contentRaw: content,
         publishedAt,
       });

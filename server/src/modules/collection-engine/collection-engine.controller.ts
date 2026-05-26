@@ -1,3 +1,18 @@
+/**
+ * FICHIER: collection-engine.controller.ts
+ *
+ * RÔLE: Expose les endpoints REST de déclenchement des collectes (manuel, synchrone, tout).
+ *
+ * RESPONSABILITÉS:
+ * - POST /trigger/:planId → déclenche une collecte en arrière-plan
+ * - POST /run/:planId → exécute une collecte synchrone
+ * - POST /trigger-all → déclenche tous les plans actifs
+ *
+ * FLUX:
+ * - Requête HTTP → Controller → CollectionEngineService
+ *
+ * EXEMPLE: L'admin appelle POST /collection-engine/trigger/plan-abc pour lancer une collecte.
+ */
 import { Controller, Post, Param, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';

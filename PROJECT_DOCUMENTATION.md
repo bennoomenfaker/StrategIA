@@ -17,7 +17,7 @@ Si vous êtes un agent OpenCode lisant ce fichier dans une nouvelle conversation
 - **Backend** : NestJS (TypeScript), Architecture DDD Modular Monolith, Swagger UI/OpenAPI
 - **Collector** : Python Scrapy + trafilatura + sentence-transformers (NLP filtering)
 - **Database** : PostgreSQL 15+ avec Prisma ORM
-- **Queue** : BullMQ + Redis
+- **Scheduling** : @nestjs/schedule (cron)
 - **Auth** : JWT (access + refresh tokens), RBAC (OWNER, TEAM_MEMBER, VIEWER)
 - **Multi-tenant** : Isolation par organization_id
 - **Concept central** : Type d'Intelligence → Objectif → Axe → Hypothèse → Question → Donnée → Insight
@@ -46,13 +46,13 @@ StrategIA/
     │   │   ├── main.ts          # Entry point + Swagger setup
     │   │   ├── app.module.ts
     │   │   ├── common/          # Guards, decorators, enums, interceptors
-    │   │   ├── config/          # Database, JWT, Redis, App config
+    │   │   ├── config/          # Database, JWT, App config
     │   │   ├── prisma/          # Schema + Prisma service
     │   │   └── modules/         # 13 DDD modules
     │   ├── package.json
     │   ├── tsconfig.json
     │   ├── nest-cli.json
-    │   ├── docker-compose.yml   # Full stack (backend + collector + frontend + db + redis)
+    │   ├── docker-compose.yml   # Full stack (backend + collector + frontend)
     │   ├── Dockerfile
     │   └── .env.example
         └── collector-engine/        # Python Scrapy Collector (Port 8000)
@@ -185,7 +185,7 @@ Type d'Intelligence → Objectif → Axe → Hypothèse → Question → Donnée
 | **Swagger Docs** | http://localhost:3000/api/docs | 3000 | OpenAPI Documentation |
 | **Collector Engine** | http://localhost:8000 | 8000 | Python Scrapy Collector |
 | **PostgreSQL** | localhost:5432 | 5432 | Database |
-| **Redis** | localhost:6379 | 6379 | Cache & Queue |
+
 
 ---
 
@@ -239,7 +239,7 @@ const config = new DocumentBuilder()
 | **Framework** | NestJS (TypeScript) | ^10.x |
 | **Architecture** | Modular Monolith (DDD) | - |
 | **ORM** | Prisma | ^5.x |
-| **Queue** | BullMQ | ^5.x |
+| **Scheduling** | @nestjs/schedule | ^4.x |
 | **Auth** | JWT + Passport | - |
 | **API Docs** | Swagger UI + OpenAPI | ^7.2 |
 
@@ -273,11 +273,8 @@ const config = new DocumentBuilder()
   "@nestjs/core": "^10.0.0",
   "@nestjs/jwt": "^10.0.0",
   "@nestjs/passport": "^10.0.0",
-  "@nestjs/bullmq": "^10.0.0",
   "@nestjs/schedule": "^4.0.0",
   "@prisma/client": "^5.0.0",
-  "bullmq": "^5.0.0",
-  "ioredis": "^5.0.0",
   "passport-jwt": "^4.0.0",
   "class-validator": "^0.14.0",
   "class-transformer": "^0.5.0"
@@ -334,7 +331,7 @@ const config = new DocumentBuilder()
                     ┌─────────────────┼─────────────────┐
                     ▼                 ▼                 ▼
               ┌──────────────┐ ┌──────────────┐ ┌──────────────┐
-              │  PostgreSQL   │ │    Redis     │ │  BullMQ      │
+               │  PostgreSQL   │ │  Schedule    │
               │  (Prisma)     │ │   (Cache)    │ │  (Queue)     │
               └──────────────┘ └──────────────┘ └──────────────┘
 ```
@@ -378,7 +375,7 @@ strategia-backend/
 │   ├── config/
 │   │   ├── database.config.ts
 │   │   ├── jwt.config.ts
-│   │   ├── redis.config.ts
+
 │   │   └── app.config.ts
 │   │
 │   ├── prisma/
@@ -440,7 +437,7 @@ module-name/
 | **hypotheses** | Hypothèses à valider/invalider |
 | **perimeters** | Contexte hiérarchique (géographique, sectoriel) |
 | **collection-plans** | Plans de collecte (question + sources + keywords + fréquence) |
-| **collection-engine** | Orchestration async via BullMQ, scheduling, filtrage, déduplication |
+| **collection-engine** | Orchestration via @nestjs/schedule, filtrage, déduplication |
 | **connectors** | RSS, Web scraping, PDF extraction |
 | **raw-data** | Stockage données brutes collectées |
 | **audit** | Logs d'activité, traçabilité |
@@ -1088,7 +1085,7 @@ ON CONFLICT (email) DO NOTHING;
 
 ```
 ┌─────────────────┐
-│  Scheduler      │ (cron / BullMQ repeatable jobs)
+│  Scheduler      │ (@nestjs/schedule cron)
 │  Service        │
 └────────┬────────┘
          │ Déclenche les plans actifs dont next_run_at <= NOW()
@@ -1098,14 +1095,8 @@ ON CONFLICT (email) DO NOTHING;
 │  Plans Service  │
 └────────┬────────┘
          │ Récupère les sources et keywords du plan
-         │ Crée un job BullMQ
-         ▼
-┌─────────────────┐
-│  BullMQ Queue   │ (collection-queue)
-│  (Redis)        │
-└────────┬────────┘
-         │ Consommé par le processor
-         ▼
+          │ Exécute la collecte directement
+          ▼
 ┌─────────────────┐
 │  Collection     │
 │  Engine Service │
@@ -1192,34 +1183,27 @@ async findOne(@Param('id') id: string, @CurrentUser() user: UserPayload) {
 
 ---
 
-## 📊 SYSTÈME DE FILE D'ATTENTE
+## 📊 SYSTÈME DE SCHEDULING
 
-### BullMQ Configuration :
+### Scheduling Configuration :
 
-```
-Redis (localhost:6379)
-    └── BullMQ Queue: "collection-queue"
-            ├── Processor: CollectionQueueProcessor
-            ├── Concurrency: 5 jobs simultanés
-            ├── Retry: 3 tentatives avec backoff exponentiel
-            └── Timeout: 5 minutes par job
-```
+Le scheduling est géré par `@nestjs/schedule` avec `@Cron`.
 
-### Jobs configurés :
+Le service `CollectionEngineService` utilise un cron `EVERY_10_MINUTES` pour vérifier les plans actifs.
 
-| Job Type | Fréquence | Priorité | Description |
-|----------|-----------|----------|-------------|
-| **COLLECT** | Selon plan | High | Exécuter un plan de collecte |
-| **DEDUPLICATE** | Après COLLECT | Medium | Vérifier les doublons |
-| **CLEANUP** | Hebdomadaire | Low | Nettoyer les anciens tokens |
+### Architecture actuelle :
+
+1. `@Cron(CronExpression.EVERY_10_MINUTES)` déclenche `handleScheduledCollections()`
+2. Vérifie les plans avec `nextRunAt <= NOW()`
+3. Exécute la collecte en async via `setTimeout()`
+4. Pas de file d'attente externe (@nestjs/schedule)
 
 ### Retry mechanism :
 
 ```
-Tentative 1 → Immédiate
-Tentative 2 → Après 30 secondes (backoff)
-Tentative 3 → Après 5 minutes (backoff)
-Échec final → Status FAILED, error_message enregistré
+Tentative 1 → Exécution directe
+Échec → Status FAILED, error_message enregistré
+Retry manuel via endpoint POST /collection-engine/trigger/:planId
 ```
 
 ---
@@ -1283,8 +1267,8 @@ interface CollectionResult {
 | **FilterService** | Filtrage par keywords (include/exclude) |
 | **DeduplicationService** | Détection de doublons par hash |
 | **RetryService** | Gestion des retries avec backoff |
-| **CollectionSchedulerService** | Planification cron/BullMQ |
-| **CollectionQueueProcessor** | Consumer BullMQ |
+| **CollectionSchedulerService** | Planification cron (@nestjs/schedule) |
+| **CollectionEngineService** | Orchestrateur de collecte |
 
 ### Fréquences supportées :
 
@@ -1334,7 +1318,7 @@ Frontend (Bouton "Déclencher")
     ↓
 Backend NestJS (POST /collection-engine/trigger/:planId)
     ↓
-BullMQ Queue (Redis)
+Collection Engine Service
     ↓
 Backend Processor (CollectionProcessor)
     ↓
@@ -1505,8 +1489,8 @@ node --version
 # PostgreSQL 15+
 psql --version
 
-# Redis 7+
-redis-server --version
+# PostgreSQL 15+
+psql --version
 ```
 
 ### Configuration PostgreSQL (votre setup) :
@@ -1570,7 +1554,7 @@ JWT_EXPIRES_IN=15m
 JWT_REFRESH_SECRET=your-super-secret-refresh-key-change-in-production
 JWT_REFRESH_EXPIRES_IN=7d
 
-# Redis
+# PostgreSQL
 REDIS_HOST=localhost
 REDIS_PORT=6379
 REDIS_PASSWORD=
@@ -1716,7 +1700,7 @@ ORDER BY pg_total_relation_size(schemaname||'.'||tablename) DESC;
 | **CollectionPlans Module** | collection-plans.service.ts, collection-plans.controller.ts | CRUD + sources/keywords |
 | **RawData Module** | raw-data.service.ts, raw-data.controller.ts | Query + filter + stats |
 | **Audit Module** | audit.service.ts, audit.controller.ts | Activity logs with filters |
-| **Collection Engine** | collection-engine.service.ts, collection.processor.ts | Cron + BullMQ + HTTP to Python |
+| **Collection Engine** | collection-engine.service.ts | Cron (@nestjs/schedule) + HTTP to Python |
 | **Collector API** | server.py (FastAPI) | FastAPI server for Scrapy integration |
 | **Frontend Auth** | (auth)/login/page.tsx, (auth)/register/page.tsx | Login/register with JWT storage |
 | **Frontend Projects** | projects/page.tsx, projects/new/page.tsx, projects/[id]/page.tsx | Project management UI |
@@ -1779,7 +1763,7 @@ ORDER BY pg_total_relation_size(schemaname||'.'||tablename) DESC;
 | **Collector Engine** | ~30 fichiers | Python Scrapy avec spiders, extractors, NLP filtering, scoring, dedup |
 | **Frontend Next.js** | ~25 fichiers | Dashboard, auth, projects, feed, graph (React Flow), analytics (Recharts) |
 | **Swagger UI** | main.ts modifié | OpenAPI docs avec Bearer auth, 13 tags, accessible sur /api/docs |
-| **Docker Compose** | modifié | 5 services : backend, frontend, collector, postgres, redis |
+| **Docker Compose** | modifié | 3 services : backend, frontend, collector |
 | **README.md** | nouveau | Guide de démarrage rapide |
 
 #### MOVED (déplacé)
@@ -1826,7 +1810,7 @@ ORDER BY pg_total_relation_size(schemaname||'.'||tablename) DESC;
 1. Prisma ORM choisi sur TypeORM ou raw SQL
 2. UUID avec cuid() plutôt que gen_random_uuid() (compatibilité Prisma)
 3. Multi-tenancy logique (organization_id) plutôt que schema-per-tenant
-4. BullMQ pour les files d'attente (pas de cron pur)
+4. @nestjs/schedule pour le cron (pas de file d'attente externe)
 5. Pas d'implémentation IA maintenant, juste les hooks
 6. Scrapy choisi pour le collector (pas de simple requests)
 7. Trafilatura + Readability + BeautifulSoup pour extraction fallback

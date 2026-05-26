@@ -1,3 +1,17 @@
+/**
+ * FICHIER: deduplication.service.ts
+ *
+ * RÔLE: Élimine les doublons d'items collectés par hash SHA-256 du contenu normalisé.
+ *
+ * RESPONSABILITÉS:
+ * - Générer un hash unique (titre + URL + contenu + date) pour chaque item
+ * - Filtrer les items déjà présents en base ou déjà vus dans le cycle
+ *
+ * FLUX:
+ * - CollectionEngineService → DeduplicationService.filterUnique() → items dédoublonnés
+ *
+ * EXEMPLE: Deux sources publient le même article → un seul est conservé.
+ */
 import { Injectable, Logger } from '@nestjs/common';
 import { createHash } from 'crypto';
 import { PrismaService } from '@/prisma/prisma.service';
@@ -8,24 +22,19 @@ export class DeduplicationService {
 
   constructor(private prisma: PrismaService) {}
 
-  generateHash(title: string | null, url: string, publishedAt?: Date | null): string {
-    const data = [title || '', url, publishedAt?.toISOString() || ''].join('|');
-    return createHash('sha256').update(data).digest('hex').substring(0, 16);
+  generateHash(title: string | null, url: string, content: string, publishedAt?: Date | null): string {
+    const normalise = (content || '').toLowerCase().replace(/[^\w\s]/g, '').replace(/\s+/g, ' ').trim().substring(0, 300);
+    return createHash('sha256').update([title || '', url, normalise, publishedAt?.toISOString() || ''].join('|')).digest('hex');
   }
 
   async filterUnique(items: any[], projectId: string): Promise<any[]> {
-    const unique: any[] = [];
+    const existing = await this.prisma.rawItem.findMany({ where: { projectId }, select: { hash: true } });
+    const existingHashes = new Set(existing.map(r => r.hash));
     const seen = new Set<string>();
-    const existingHashes = new Set<string>();
-
-    const existing = await this.prisma.rawItem.findMany({
-      where: { projectId },
-      select: { hash: true },
-    });
-    for (const r of existing) existingHashes.add(r.hash);
+    const unique: any[] = [];
 
     for (const item of items) {
-      const hash = this.generateHash(item.title, item.sourceUrl, item.publishedAt);
+      const hash = this.generateHash(item.title, item.sourceUrl, item.contentRaw, item.publishedAt);
       if (!seen.has(hash) && !existingHashes.has(hash)) {
         seen.add(hash);
         item.hash = hash;
@@ -33,7 +42,7 @@ export class DeduplicationService {
       }
     }
 
-    this.logger.log(`Dedup: ${items.length} -> ${unique.length} unique`);
+    this.logger.log(`Dedup: ${items.length} → ${unique.length} uniques`);
     return unique;
   }
 }

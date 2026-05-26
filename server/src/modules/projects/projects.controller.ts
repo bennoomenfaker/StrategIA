@@ -1,11 +1,15 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import { ProjectsService } from './projects.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
+import { ChangeProjectStatusDto } from './dto/change-project-status.dto';
 
 @ApiTags('projects')
 @Controller('projects')
+@UseGuards(JwtAuthGuard)
+@ApiBearerAuth()
 export class ProjectsController {
   constructor(private readonly projectsService: ProjectsService) {}
 
@@ -42,6 +46,12 @@ export class ProjectsController {
   @ApiResponse({ status: 200, description: 'Project updated successfully' })
   update(@Param('id') id: string, @Body() dto: UpdateProjectDto) {
     return this.projectsService.update(id, dto);
+  }
+
+  @Patch(':id/status')
+  @ApiOperation({ summary: 'Change project status (DRAFT, ACTIVE, PAUSED, COMPLETED, ARCHIVED)' })
+  changeStatus(@Param('id') id: string, @Body() dto: ChangeProjectStatusDto) {
+    return this.projectsService.changeStatus(id, dto.status);
   }
 
   @Delete(':id')

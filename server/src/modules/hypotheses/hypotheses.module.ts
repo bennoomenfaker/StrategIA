@@ -1,11 +1,10 @@
 import { Module } from '@nestjs/common';
 import { HypothesesService } from './hypotheses.service';
 import { HypothesesController } from './hypotheses.controller';
-import { HypothesisRepository } from './repositories/hypothesis.repository';
 
 @Module({
   controllers: [HypothesesController],
-  providers: [HypothesesService, HypothesisRepository],
+  providers: [HypothesesService],
   exports: [HypothesesService],
 })
 export class HypothesesModule {}

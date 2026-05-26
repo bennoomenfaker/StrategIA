@@ -47,9 +47,8 @@ export default function GraphPage() {
       const projects = projectsRes.data.data || projectsRes.data || [];
       const perimeters = perimetersRes.data.data || perimetersRes.data || [];
       
-      console.log("Projects:", JSON.stringify(projects, null, 2));
-      console.log("Perimeters:", JSON.stringify(perimeters, null, 2));
-
+      // Data fetched successfully; building graph layout
+      
       const allNodes: Node[] = [];
       const allEdges: Edge[] = [];
       const nodePositions = new Map<string, { x: number; y: number }>();
@@ -89,7 +88,7 @@ export default function GraphPage() {
           allNodes.push({
             id: `obj-${obj.id}`,
             position: { x: objX, y: objY + objIdx * 150 },
-            data: { label: obj.content.substring(0, 40) + "..." },
+            data: { label: obj.content.substring(0, 40) + "...", projectId: project.id },
             style: {
               background: "#3b82f6",
               color: "white",
@@ -120,7 +119,7 @@ export default function GraphPage() {
             allNodes.push({
               id: `axe-${axe.id}`,
               position: { x: axeX, y: axeY + axeIdx * 120 },
-              data: { label: axe.name },
+              data: { label: axe.name, projectId: project.id },
               style: {
                 background: "#8b5cf6",
                 color: "white",
@@ -152,7 +151,7 @@ export default function GraphPage() {
               allNodes.push({
                 id: `hyp-${hyp.id}`,
                 position: { x: hypX, y: hypY + hypIdx * 100 },
-                data: { label: hyp.content.substring(0, 35) + "..." },
+                data: { label: hyp.content.substring(0, 35) + "...", projectId: project.id },
                 style: {
                   background: color,
                   color: "white",
@@ -257,8 +256,8 @@ export default function GraphPage() {
             onNodeClick={(_, node) => {
               const [type, id] = node.id.split("-");
               if (type === "project") router.push(`/projects/${id}`);
-              if (type === "obj") router.push(`/projects/${id}`);
-              if (type === "hyp") router.push(`/intelligence/hypotheses`);
+              if (type === "obj") router.push(`/projects/${node.data.projectId}`);
+              if (type === "hyp") router.push(`/projects/${node.data.projectId}/hypotheses`);
               if (type === "perim") router.push(`/perimeters`);
             }}
           >

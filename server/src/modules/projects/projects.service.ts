@@ -2,7 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '@/prisma/prisma.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
-import { VeilleType } from '@prisma/client';
+import { VeilleType, ProjectStatus } from '@prisma/client';
 
 @Injectable()
 export class ProjectsService {
@@ -16,6 +16,10 @@ export class ProjectsService {
         description: dto.description,
         slug,
         veilleType: dto.veilleType || VeilleType.CUSTOM,
+        status: dto.status || ProjectStatus.DRAFT,
+        problematic: dto.problematic,
+        context: dto.context,
+        expectedDecision: dto.expectedDecision,
         startDate: dto.startDate ? new Date(dto.startDate) : undefined,
         endDate: dto.endDate ? new Date(dto.endDate) : undefined,
         organizationId: dto.organizationId,
@@ -27,7 +31,8 @@ export class ProjectsService {
 
   async findAll(organizationId?: string) {
     return this.prisma.project.findMany({
-      where: { organizationId, deletedAt: null, isArchived: false },
+      where: { organizationId, deletedAt: null },
+      orderBy: { createdAt: 'desc' },
       include: { organization: true, ownerUser: true },
     });
   }
@@ -35,35 +40,36 @@ export class ProjectsService {
   async findOne(id: string) {
     const project = await this.prisma.project.findUnique({
       where: { id },
-      include: { 
-        organization: true, 
-        ownerUser: true, 
+      include: {
+        organization: true,
+        ownerUser: true,
         objectives: true,
         perimeters: true,
       },
     });
-    
+
     if (!project) throw new NotFoundException('Project not found');
     return project;
   }
 
   async findAllWithDetails() {
     const projects = await this.prisma.project.findMany({
-      where: { deletedAt: null, isArchived: false },
-      include: { 
+      where: { deletedAt: null },
+      include: {
         objectives: {
           include: {
             axes: {
               include: {
-                hypotheses: true
-              }
-            }
-          }
+                hypotheses: true,
+              },
+            },
+          },
         },
         perimeters: true,
       },
+      orderBy: { createdAt: 'desc' },
     });
-    
+
     return projects;
   }
 
@@ -77,6 +83,19 @@ export class ProjectsService {
         endDate: dto.endDate ? new Date(dto.endDate) : undefined,
       },
       include: { organization: true, ownerUser: true },
+    });
+  }
+
+  async changeStatus(id: string, status: ProjectStatus) {
+    await this.findOne(id);
+    return this.prisma.project.update({
+      where: { id },
+      data: {
+        status,
+        ...(status === ProjectStatus.COMPLETED || status === ProjectStatus.ARCHIVED
+          ? { closedAt: new Date() }
+          : {}),
+      },
     });
   }
 

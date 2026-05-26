@@ -1,0 +1,153 @@
+{
+  "nav": {
+    "dashboard": "Tableau de bord",
+    "projects": "Projets",
+    "hypotheses": "Hypothèses",
+    "collectionPlans": "Plans de collecte",
+    "perimeters": "Périmètres",
+    "intelligenceFeed": "Flux de veille",
+    "graphView": "Vue graphe",
+    "analytics": "Analytiques",
+    "settings": "Paramètres",
+    "insights": "Insights",
+    "signals": "Signaux faibles",
+    "trends": "Tendances",
+    "recommendations": "Recommandations",
+    "decisions": "Décisions"
+  },
+  "common": {
+    "search": "Rechercher...",
+    "loading": "Chargement...",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "create": "Créer",
+    "back": "Retour",
+    "confirm": "Confirmer",
+    "noData": "Aucune donnée",
+    "error": "Erreur",
+    "success": "Succès",
+    "language": "Langue"
+  },
+  "auth": {
+    "signIn": "Connexion",
+    "signOut": "Déconnexion",
+    "email": "Email",
+    "password": "Mot de passe",
+    "register": "Créer un compte",
+    "forgotPassword": "Mot de passe oublié ?",
+    "logout": "Déconnexion"
+  },
+  "dashboard": {
+    "title": "Tableau de bord stratégique",
+    "subtitle": "Surveillez vos opérations de veille en temps réel",
+    "activeProjects": "Projets actifs",
+    "hypotheses": "Hypothèses",
+    "validated": "validée(s)",
+    "collectionPlans": "Plans de collecte",
+    "active": "actif(s)",
+    "insightsGenerated": "Insights générés",
+    "aiIntegrationPending": "Intégration IA en cours",
+    "recentActivity": "Activité récente",
+    "viewAll": "Voir tout",
+    "quickActions": "Actions rapides",
+    "newProject": "Nouveau projet",
+    "addHypothesis": "Ajouter une hypothèse",
+    "newCollectionPlan": "Nouveau plan de collecte",
+    "running": "en cours"
+  },
+  "projects": {
+    "title": "Projets",
+    "newProject": "Nouveau projet",
+    "editProject": "Modifier le projet",
+    "deleteProject": "Supprimer le projet",
+    "noProjects": "Aucun projet pour le moment"
+  },
+  "hypotheses": {
+    "title": "Hypothèses",
+    "newHypothesis": "Nouvelle hypothèse",
+    "editHypothesis": "Modifier l'hypothèse",
+    "content": "Énoncé de l'hypothèse",
+    "priority": "Priorité",
+    "status": "Statut",
+    "selectAxe": "Sélectionner un axe",
+    "noAxes": "Aucun axe. Veuillez d'abord créer un axe.",
+    "noHypotheses": "Aucune hypothèse",
+    "filterByAxe": "Filtrer par axe",
+    "allAxes": "Tous les axes",
+    "validate": "Valider",
+    "deleteConfirm": "Êtes-vous sûr de vouloir supprimer cette hypothèse ?",
+    "scenario": "Scénario",
+    "timeframe": "Horizon temporel",
+    "confidence": "Score de confiance",
+    "stability": "Stabilité",
+    "evidence": "Preuves",
+    "contradictions": "Contradictions",
+    "supports": "Supports",
+    "validationStatus": "Statut de validation",
+    "aiAnalysis": "Analyse IA"
+  },
+  "collectionPlans": {
+    "title": "Plans de collecte",
+    "details": "Détails",
+    "results": "Résultats",
+    "jobs": "Tâches",
+    "aiAnalysis": "Analyse IA",
+    "sources": "Sources",
+    "keywords": "Mots-clés",
+    "noSources": "Aucune source configurée",
+    "noKeywords": "Aucun mot-clé configuré",
+    "runCollection": "Lancer la collecte",
+    "collecting": "Collecte en cours...",
+    "itemsCollected": "éléments collectés",
+    "planNotFound": "Plan non trouvé",
+    "active": "Actif",
+    "paused": "En pause"
+  },
+  "perimeters": {
+    "title": "Périmètres de veille"
+  },
+  "feed": {
+    "title": "Flux de veille"
+  },
+  "graph": {
+    "title": "Vue graphe des connaissances"
+  },
+  "analytics": {
+    "title": "Analytiques"
+  },
+  "settings": {
+    "title": "Paramètres"
+  },
+  "insights": {
+    "title": "Insights stratégiques",
+    "noInsights": "Aucun insight généré pour le moment",
+    "confidence": "Confiance",
+    "impact": "Impact",
+    "urgency": "Urgence",
+    "type": "Type"
+  },
+  "signals": {
+    "title": "Signaux faibles",
+    "noSignals": "Aucun signal détecté",
+    "strength": "Force",
+    "firstDetected": "Première détection",
+    "lastDetected": "Dernière détection",
+    "detectionCount": "Détections"
+  },
+  "trends": {
+    "title": "Tendances",
+    "noTrends": "Aucune tendance identifiée",
+    "momentum": "Momentum",
+    "direction": "Direction"
+  },
+  "recommendations": {
+    "title": "Recommandations",
+    "noRecommendations": "Aucune recommandation"
+  },
+  "decisions": {
+    "title": "Décisions stratégiques",
+    "noDecisions": "Aucune décision enregistrée"
+  }
+}

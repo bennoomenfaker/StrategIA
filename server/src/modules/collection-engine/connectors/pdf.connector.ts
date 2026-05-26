@@ -1,3 +1,18 @@
+/**
+ * FICHIER: pdf.connector.ts
+ *
+ * RÔLE: Connecteur PDF qui extrait le texte de documents PDF (URL ou fichier local).
+ *
+ * RESPONSABILITÉS:
+ * - Télécharger un PDF distant ou lire un fichier local
+ * - Extraire le texte via pdf-parse
+ * - Retourner le titre, le contenu et la date de création
+ *
+ * FLUX:
+ * - CollectionEngineService → PdfConnectorService.fetch(url) → CollectedData[]
+ *
+ * EXEMPLE: Un rapport PDF hébergé sur un serveur est téléchargé et son texte extrait pour analyse.
+ */
 import { Injectable, Logger } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -28,7 +43,6 @@ export class PdfConnectorService implements IConnector {
         sourceType: 'PDF',
         title: data.info?.Title || path.basename(url),
         description: data.text.substring(0, 200),
-        content: data.text,
         contentRaw: data.text,
         publishedAt: data.info?.CreationDate ? new Date(data.info.CreationDate) : undefined,
       }];

@@ -1,0 +1,153 @@
+{
+  "nav": {
+    "dashboard": "Dashboard",
+    "projects": "Projects",
+    "hypotheses": "Hypotheses",
+    "collectionPlans": "Collection Plans",
+    "perimeters": "Perimeters",
+    "intelligenceFeed": "Intelligence Feed",
+    "graphView": "Graph View",
+    "analytics": "Analytics",
+    "settings": "Settings",
+    "insights": "Insights",
+    "signals": "Weak Signals",
+    "trends": "Trends",
+    "recommendations": "Recommendations",
+    "decisions": "Decisions"
+  },
+  "common": {
+    "search": "Search...",
+    "loading": "Loading...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "back": "Back",
+    "confirm": "Confirm",
+    "noData": "No data",
+    "error": "Error",
+    "success": "Success",
+    "language": "Language"
+  },
+  "auth": {
+    "signIn": "Sign In",
+    "signOut": "Sign Out",
+    "email": "Email",
+    "password": "Password",
+    "register": "Create Account",
+    "forgotPassword": "Forgot password?",
+    "logout": "Logout"
+  },
+  "dashboard": {
+    "title": "Strategic Overview",
+    "subtitle": "Monitor your intelligence operations in real-time",
+    "activeProjects": "Active Projects",
+    "hypotheses": "Hypotheses",
+    "validated": "validated",
+    "collectionPlans": "Collection Plans",
+    "active": "active",
+    "insightsGenerated": "Insights Generated",
+    "aiIntegrationPending": "AI integration pending",
+    "recentActivity": "Recent Activity",
+    "viewAll": "View all",
+    "quickActions": "Quick Actions",
+    "newProject": "New Project",
+    "addHypothesis": "Add Hypothesis",
+    "newCollectionPlan": "New Collection Plan",
+    "running": "running"
+  },
+  "projects": {
+    "title": "Projects",
+    "newProject": "New Project",
+    "editProject": "Edit Project",
+    "deleteProject": "Delete Project",
+    "noProjects": "No projects yet"
+  },
+  "hypotheses": {
+    "title": "Hypotheses",
+    "newHypothesis": "New Hypothesis",
+    "editHypothesis": "Edit Hypothesis",
+    "content": "Hypothesis Statement",
+    "priority": "Priority",
+    "status": "Status",
+    "selectAxe": "Select an Axe",
+    "noAxes": "No axes yet. Please create an axe first.",
+    "noHypotheses": "No hypotheses yet",
+    "filterByAxe": "Filter by Axe",
+    "allAxes": "All Axes",
+    "validate": "Validate",
+    "deleteConfirm": "Are you sure you want to delete this hypothesis?",
+    "scenario": "Scenario",
+    "timeframe": "Timeframe",
+    "confidence": "Confidence Score",
+    "stability": "Stability",
+    "evidence": "Evidence",
+    "contradictions": "Contradictions",
+    "supports": "Supports",
+    "validationStatus": "Validation Status",
+    "aiAnalysis": "AI Analysis"
+  },
+  "collectionPlans": {
+    "title": "Collection Plans",
+    "details": "Details",
+    "results": "Results",
+    "jobs": "Jobs",
+    "aiAnalysis": "AI Analysis",
+    "sources": "Sources",
+    "keywords": "Keywords",
+    "noSources": "No sources configured",
+    "noKeywords": "No keywords configured",
+    "runCollection": "Run Collection",
+    "collecting": "Collecting...",
+    "itemsCollected": "items collected",
+    "planNotFound": "Plan not found",
+    "active": "Active",
+    "paused": "Paused"
+  },
+  "perimeters": {
+    "title": "Perimeters"
+  },
+  "feed": {
+    "title": "Intelligence Feed"
+  },
+  "graph": {
+    "title": "Knowledge Graph View"
+  },
+  "analytics": {
+    "title": "Analytics"
+  },
+  "settings": {
+    "title": "Settings"
+  },
+  "insights": {
+    "title": "Strategic Insights",
+    "noInsights": "No insights generated yet",
+    "confidence": "Confidence",
+    "impact": "Impact",
+    "urgency": "Urgency",
+    "type": "Type"
+  },
+  "signals": {
+    "title": "Weak Signals",
+    "noSignals": "No signals detected",
+    "strength": "Strength",
+    "firstDetected": "First detected",
+    "lastDetected": "Last detected",
+    "detectionCount": "Detections"
+  },
+  "trends": {
+    "title": "Trends",
+    "noTrends": "No trends identified",
+    "momentum": "Momentum",
+    "direction": "Direction"
+  },
+  "recommendations": {
+    "title": "Recommendations",
+    "noRecommendations": "No recommendations"
+  },
+  "decisions": {
+    "title": "Strategic Decisions",
+    "noDecisions": "No decisions recorded"
+  }
+}

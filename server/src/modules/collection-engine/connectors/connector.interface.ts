@@ -3,7 +3,6 @@ export interface CollectedData {
   sourceType: string;
   title?: string;
   description?: string;
-  content: string;
   contentRaw: string;
   publishedAt?: Date;
 }

@@ -39,6 +39,12 @@ async function bootstrap() {
     .addTag('audit', 'Activity logging & audit trail')
     .addTag('analytics', 'Real-time analytics & statistics')
     .addTag('feed', 'Activity feed & recent items')
+    .addTag('insights', 'Strategic insights from collected data')
+    .addTag('recommendations', 'Actionable recommendations from insights')
+    .addTag('strategic-decisions', 'Record and track strategic decisions')
+    .addTag('signals', 'Weak signals and early indicators detection')
+    .addTag('trends', 'Trend identification and monitoring')
+    .addTag('ai-assistant', 'AI-powered suggestions and snippets')
     .build();
 
   const document = SwaggerModule.createDocument(app, config);

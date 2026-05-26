@@ -2,10 +2,8 @@ import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseGuards } f
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import { CollectionPlansService } from './collection-plans.service';
-import { CreateCollectionPlanDto } from './dto/create-collection-plan.dto';
+import { CreateCollectionPlanDto, AddSourceDto, AddKeywordDto } from './dto/create-collection-plan.dto';
 import { UpdateCollectionPlanDto } from './dto/update-collection-plan.dto';
-import { AddSourceDto } from './dto/add-source.dto';
-import { AddKeywordDto } from './dto/add-keyword.dto';
 
 @ApiTags('collection-plans')
 @Controller('collection-plans')

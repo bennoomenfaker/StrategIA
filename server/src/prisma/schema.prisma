@@ -32,14 +32,110 @@ enum MemberStatus {
   INACTIVE
 }
 
+// ==================== STRATEGIC INTELLIGENCE ENUMS ====================
+
 enum VeilleType {
   TECHNOLOGIQUE
   CONCURRENTIELLE
+  COMMERCIALE
   REGLEMENTAIRE
-  MARCHES
+  STRATEGIQUE
+  E_REPUTATION
   SCIENTIFIQUE
-  MEDIAS
+  GEOPOLITIQUE
+  ENVIRONNEMENTALE
+  SECURITAIRE
+  SOCIETALE
   CUSTOM
+}
+
+enum ProjectStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  COMPLETED
+  ARCHIVED
+}
+
+enum HypothesisStatus {
+  OPEN
+  IN_PROGRESS
+  VALIDATED
+  INVALIDATED
+  PENDING_REVIEW
+}
+
+enum ValidationStatus {
+  PENDING
+  SUPPORTED
+  CONTRADICTED
+  UNCERTAIN
+}
+
+enum PerimeterType {
+  GEOGRAPHIC
+  SECTORIAL
+  TEMPORAL
+  ORGANIZATIONAL
+  TECHNOLOGICAL
+}
+
+enum InsightType {
+  OPPORTUNITY
+  THREAT
+  TREND
+  SIGNAL_FAIBLE
+  CONFIRMATION
+  ALERT
+  INFORMATION
+}
+
+enum RecommendationPriority {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum RecommendationStatus {
+  DRAFT
+  PROPOSED
+  APPROVED
+  REJECTED
+  IMPLEMENTED
+}
+
+enum DecisionStatus {
+  PENDING
+  TAKEN
+  DEFERRED
+  CANCELLED
+}
+
+enum SignalStrength {
+  FAIBLE
+  MOYEN
+  FORT
+  CONFIRME
+}
+
+enum SourceCredibility {
+  NON_VERIFIE
+  FAIBLE
+  MOYENNE
+  ELEVEE
+  OFFICIELLE
+}
+
+enum AISuggestionType {
+  PROBLEMATIQUE
+  OBJECTIF
+  AXE
+  HYPOTHESE
+  QUESTION
+  KEYWORD
+  SOURCE
+  PERIMETER
 }
 
 enum Frequency {
@@ -59,18 +155,6 @@ enum SourceType {
 enum KeywordType {
   INCLUDE
   EXCLUDE
-}
-
-enum HypothesisStatus {
-  OPEN
-  VALIDATED
-  INVALIDATED
-  IN_PROGRESS
-}
-
-enum PerimeterType {
-  GEOGRAPHIC
-  SECTORIAL
 }
 
 enum JobStatus {
@@ -94,14 +178,17 @@ model User {
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 
-  ownedProjects     Project[]           @relation("OwnedProjects")
-  organizations     OrganizationMember[]
-  ownedOrganizations Organization[]     @relation("Owner")
-  activityLogs      ActivityLog[]
-  hypotheses        Hypothesis[]        @relation("UserHypotheses")
-  collectedRawItems RawItem[]           @relation("CollectedRawItems")
-  validatedHypotheses Hypothesis[]      @relation("ValidatedBy")
-  refreshTokens     RefreshToken[]
+  ownedProjects       Project[]           @relation("OwnedProjects")
+  organizations       OrganizationMember[]
+  ownedOrganizations  Organization[]      @relation("Owner")
+  activityLogs        ActivityLog[]
+  hypotheses          Hypothesis[]        @relation("UserHypotheses")
+  collectedRawItems   RawItem[]           @relation("CollectedRawItems")
+  validatedHypotheses Hypothesis[]        @relation("ValidatedBy")
+  insights            Insight[]
+  recommendations     Recommendation[]
+  decisions           StrategicDecision[]
+  refreshTokens       RefreshToken[]
 
   @@index([email])
   @@index([type])
@@ -183,32 +270,45 @@ model OrganizationMember {
 // ==================== PROJECTS (CORE ENTITY) ====================
 
 model Project {
-  id             String      @id @default(cuid())
-  name           String
-  description    String?
-  slug           String      @unique
-  veilleType     VeilleType  @default(CUSTOM)
-  startDate      DateTime?
-  endDate        DateTime?
-  organizationId String?
-  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  ownerUserId    String?
-  ownerUser      User?        @relation("OwnedProjects", fields: [ownerUserId], references: [id])
-  folderId       String?
-  isArchived     Boolean     @default(false)
-  deletedAt      DateTime?
-  createdAt      DateTime    @default(now())
-  updatedAt      DateTime    @updatedAt
+  id               String        @id @default(cuid())
+  name             String
+  description      String?       @db.Text
+  slug             String        @unique
+  veilleType       VeilleType    @default(CUSTOM)
+  status           ProjectStatus @default(DRAFT)
+
+  // === Strategic context (NEW) ===
+  problematic      String?       @db.Text
+  context          String?       @db.Text
+  expectedDecision String?       @db.Text
+
+  startDate        DateTime?
+  endDate          DateTime?
+  organizationId   String?
+  organization     Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  ownerUserId      String?
+  ownerUser        User?         @relation("OwnedProjects", fields: [ownerUserId], references: [id])
+  folderId         String?
+  closedAt         DateTime?
+  deletedAt        DateTime?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
 
   objectives      Objective[]
   perimeters      Perimeter[]
   rawItems        RawItem[]
+  insights        Insight[]
+  recommendations Recommendation[]
+  decisions       StrategicDecision[]
+  signals         Signal[]
+  trends          Trend[]
+  aiSuggestions   AISuggestion[]
 
   @@index([organizationId])
   @@index([ownerUserId])
   @@index([slug])
+  @@index([status])
   @@index([deletedAt])
-  @@index([isArchived])
   @@map("projects")
 }
 
@@ -260,25 +360,42 @@ model Hypothesis {
   axis            Axis             @relation(fields: [axisId], references: [id], onDelete: Cascade)
   createdBy       String?
   creator         User?            @relation("UserHypotheses", fields: [createdBy], references: [id])
+
+  // Strategic enrichment (S7.5)
+  scenario            String?          @db.Text
+  timeframe           String?
+  confidenceBefore    Float?
+  confidenceAfter     Float?
+  evidenceCount       Int              @default(0)
+  contradictionCount  Int              @default(0)
+  supportCount        Int              @default(0)
+  lastEvaluatedAt     DateTime?
+  stabilityScore      Float?           @default(0)
+  validationStatus    ValidationStatus @default(PENDING)
+
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
 
   perimeters      HypothesisPerimeter[]
   collectionPlans CollectionPlan[]
+  insights        Insight[]
+  signals         Signal[]
 
   @@index([axisId])
   @@index([status])
   @@index([priority])
+  @@index([validationStatus])
   @@map("hypotheses")
 }
 
 // ==================== PERIMETERS (HIERARCHICAL) ====================
 
 model Perimeter {
-  id         String         @id @default(cuid())
-  name       String
-  type       PerimeterType
-  projectId  String
+  id          String         @id @default(cuid())
+  name        String
+  description String?        @db.Text
+  type        PerimeterType
+  projectId   String
   project    Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
   parentId   String?
   parent     Perimeter?     @relation("ParentChild", fields: [parentId], references: [id])
@@ -307,6 +424,237 @@ model HypothesisPerimeter {
   @@index([hypothesisId])
   @@index([perimeterId])
   @@map("hypothesis_perimeters")
+}
+
+// ==================== INSIGHTS & ANALYSIS LAYER ====================
+
+model Insight {
+  id            String       @id @default(cuid())
+  title         String
+  content       String       @db.Text
+  type          InsightType  @default(INFORMATION)
+  confidence    Float?       @default(0)
+
+  // Source linkage
+  projectId     String
+  project       Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  hypothesisId  String?
+  hypothesis    Hypothesis?  @relation(fields: [hypothesisId], references: [id])
+  sourceItemId  String?
+
+  // Strategic value
+  impactScore   Float?       @default(0)
+  urgencyScore  Float?       @default(0)
+  isSignal      Boolean      @default(false)
+  tags          String[]
+  metadata      Json?
+
+  createdBy     String?
+  creator       User?        @relation(fields: [createdBy], references: [id])
+  validatedAt   DateTime?
+  validatedBy   String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  recommendations Recommendation[]
+
+  @@index([projectId])
+  @@index([hypothesisId])
+  @@index([type])
+  @@index([createdAt])
+  @@map("insights")
+}
+
+model Recommendation {
+  id               String                 @id @default(cuid())
+  title            String
+  content          String                 @db.Text
+  priority         RecommendationPriority @default(MEDIUM)
+  status           RecommendationStatus   @default(DRAFT)
+
+  // Source linkage
+  insightId        String
+  insight          Insight                @relation(fields: [insightId], references: [id], onDelete: Cascade)
+  projectId        String
+  project          Project                @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  // Decision linkage
+  decisionId       String?
+  decision         StrategicDecision?     @relation(fields: [decisionId], references: [id])
+
+  // Impact
+  expectedImpact   String?                @db.Text
+  resourcesNeeded  String?                @db.Text
+  risks            String?                @db.Text
+  deadline         DateTime?
+  tags             String[]
+  metadata         Json?
+
+  createdBy        String?
+  creator          User?                  @relation(fields: [createdBy], references: [id])
+  implementedAt    DateTime?
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime               @updatedAt
+
+  @@index([insightId])
+  @@index([projectId])
+  @@index([status])
+  @@index([priority])
+  @@map("recommendations")
+}
+
+model StrategicDecision {
+  id               String         @id @default(cuid())
+  title            String
+  description      String?        @db.Text
+  status           DecisionStatus @default(PENDING)
+
+  // Context
+  projectId        String
+  project          Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  recommendations  Recommendation[]
+  relatedSignals   String[]
+
+  // Decision attributes
+  options          Json?
+  selectedOption   String?        @db.Text
+  rationale        String?        @db.Text
+  expectedOutcome  String?        @db.Text
+  actualOutcome    String?        @db.Text
+  decisionDate     DateTime?
+  reviewDate       DateTime?
+  tags             String[]
+  metadata         Json?
+
+  createdBy        String?
+  creator          User?          @relation(fields: [createdBy], references: [id])
+  approvedBy       String?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  @@index([projectId])
+  @@index([status])
+  @@index([decisionDate])
+  @@map("strategic_decisions")
+}
+
+// ==================== SIGNALS & TRENDS ====================
+
+model Signal {
+  id            String        @id @default(cuid())
+  title         String
+  description   String        @db.Text
+  strength      SignalStrength @default(FAIBLE)
+
+  // Context
+  projectId     String
+  project       Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  hypothesisId  String?
+  hypothesis    Hypothesis?   @relation(fields: [hypothesisId], references: [id])
+  sourceItemId  String?
+
+  // Signal intelligence
+  category      String?
+  sourceUrl     String?       @db.Text
+  firstDetected DateTime      @default(now())
+  lastDetected  DateTime      @default(now())
+  detectionCount Int          @default(1)
+  relatedSignals String[]
+  tags          String[]
+  metadata      Json?
+
+  createdBy     String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([projectId])
+  @@index([hypothesisId])
+  @@index([strength])
+  @@index([firstDetected])
+  @@map("signals")
+}
+
+model Trend {
+  id            String        @id @default(cuid())
+  name          String
+  description   String        @db.Text
+  direction     String?       // ascending, descending, stable, emerging
+  momentum      Float?        @default(0)
+
+  // Context
+  projectId     String
+  project       Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  // Trend intelligence
+  category      String?
+  keywords      String[]
+  relatedSignals String[]
+  confidence    Float?        @default(0)
+  firstDetected DateTime      @default(now())
+  lastDetected  DateTime      @default(now())
+  dataPoints    Json?
+  tags          String[]
+  metadata      Json?
+
+  createdBy     String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([projectId])
+  @@index([direction])
+  @@index([momentum])
+  @@index([firstDetected])
+  @@map("trends")
+}
+
+// ==================== AI ASSISTANT (SNIPPETS & SUGGESTIONS) ====================
+
+model SnippetTemplate {
+  id            String           @id @default(cuid())
+  type          AISuggestionType
+  title         String
+  content       String           @db.Text
+  description   String?          @db.Text
+  category      String?
+  tags          String[]
+  usageCount    Int              @default(0)
+  isActive      Boolean          @default(true)
+  metadata      Json?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  suggestions   AISuggestion[]
+
+  @@index([type])
+  @@index([isActive])
+  @@index([usageCount])
+  @@map("snippet_templates")
+}
+
+model AISuggestion {
+  id            String           @id @default(cuid())
+  type          AISuggestionType
+  content       String           @db.Text
+  context       Json?            // Stores the context that generated this suggestion
+
+  // Linkage
+  projectId     String?
+  project       Project?         @relation(fields: [projectId], references: [id])
+  templateId    String?
+  template      SnippetTemplate? @relation(fields: [templateId], references: [id])
+
+  // UX state
+  isUsed        Boolean          @default(false)
+  isSaved       Boolean          @default(false)
+  isGenerated   Boolean          @default(true)
+  score         Float?           @default(0)
+  metadata      Json?
+  createdAt     DateTime         @default(now())
+
+  @@index([type])
+  @@index([projectId])
+  @@index([createdAt])
+  @@map("ai_suggestions")
 }
 
 // ==================== COLLECTION PLANS (CORE INNOVATION) ====================

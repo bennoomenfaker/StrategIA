@@ -1,33 +1,52 @@
-# StrategIA - Strategic Intelligence Platform
+# StrategIA — Intelligence Stratégique Augmentée par l'IA
 
-AI-Augmented Strategic Intelligence & Competitive Intelligence SaaS Platform
+Plateforme SaaS d'intelligence stratégique et d'aide à la décision.
+Transforme des données brutes en insights actionnables via un pipeline IA résilient (Mistral → Groq → Algorithmique).
 
 ## Architecture
 
 ```
-StrategIA/
-├── client/              # Next.js Frontend (Port 3001)
-├── server/
-│   ├── backend/         # NestJS Backend API (Port 3000)
-│   └── collector-engine/ # Python Scrapy Collector (Port 8000)
-└── PROJECT_DOCUMENTATION.md
+client/              # Frontend Next.js (Port 3001)
+server/
+├── backend/         # NestJS API (Port 3000) — modular monolith DDD
+├── collector-engine/ # Python Scrapy (Port 8000) — web crawling
+└── .env.example
 ```
 
-## Quick Start
+## Chaîne de Valeur
+
+```
+Type d'Intelligence → Objectif → Axe → Hypothèse → Question → Donnée → Insight
+```
+
+## Services
+
+| Service | URL | Description |
+|---------|-----|-------------|
+| Frontend | http://localhost:3001 | Dashboard Next.js |
+| Backend API | http://localhost:3000/api | API NestJS |
+| Swagger | http://localhost:3000/api/docs | Documentation OpenAPI |
+| Collector | http://localhost:8000 | Scrapy collector |
+| PostgreSQL | localhost:5432 | Base de données |
+
+## Démarrage Rapide
 
 ### Backend
 ```bash
 cd server/backend
+cp .env.example .env   # Configurer GROQ_API_KEY, MISTRAL_API_KEY, DATABASE_URL
 npm install
 npx prisma generate
 npm run start:dev
+# → http://localhost:3000/api/docs
 ```
 
-### Collector Engine
+### Collector Engine (Python)
 ```bash
 cd server/collector-engine
 pip install -r requirements.txt
 python run.py config config.example.json
+# → http://localhost:8000
 ```
 
 ### Frontend
@@ -35,10 +54,8 @@ python run.py config config.example.json
 cd client
 npm install
 npm run dev
+# → http://localhost:3001
 ```
-
-
-docker run -d -p 6379:6379 redis
 
 ### Docker
 ```bash
@@ -46,43 +63,92 @@ cd server/backend
 docker-compose up -d
 ```
 
-## Services
+## Pipeline IA (Fallback Résilient)
 
-| Service | URL | Description |
-|---------|-----|-------------|
-| Frontend | http://localhost:3001 | Next.js Dashboard |
-| Backend API | http://localhost:3000/api | NestJS REST API |
-| Swagger Docs | http://localhost:3000/api/docs | OpenAPI Documentation |
-| Collector Engine | http://localhost:8000 | Python Scrapy Collector |
-| PostgreSQL | localhost:5432 | Database |
-| Redis | localhost:6379 | Cache & Queue |
+```
+StrategicAnalyzer
+  → AIRouter.analyser()
+    → [Mistral] (primary)       → succès ? return
+    → [Groq] (secondary, retry×2) → succès ? return
+    → [Algorithmique] (toujours dispo) → return
+  → AIValidator (hallucination detection)
+  → HypothesisUpdateEngine (scores)
+```
 
+Tous les providers retournent le même contrat JSON :
+- `summary`, `answer`, `relevance_score`, `hypothesis_impact`, `confidence_score`
+- `entities`, `topics`, `provider`, `fallback_used`
 
-1. Redis（）
-docker run -d -p 6379:6379 redis
-# ：sudo systemctl start redis
-2. （NestJS + BullMQ + Swagger）
-cd /home/himawari/workSpace/StrategIA/server/backend
-npm run start:dev
- Swagger：http://localhost:3000/api/docs
-3. （Python FastAPI）
-cd /home/himawari/workSpace/StrategIA/server/collector-engine
-pip install fastapi uvicorn
-python server.py
-：http://localhost:8000
-4. （Next.js）
-cd /home/himawari/workSpace/StrategIA/client
-npm run dev
+### Circuit Breaker
+- 3 échecs consécutifs → provider désactivé 60s
+- Reset automatique après délai
 
-cd server/collector-engine && pip install fastapi uvicorn && python server.py
+### Cache
+- SHA256(hypothèse + contenu) → 5 min de cache
 
+### Exponential Backoff
+- 1s → 2s → 4s entre les retries
+- Timeout hard : 15s par appel
 
-C'est normal ! Tu n'as pas encore créé de périmètres, donc la liste est vide.
-Procédure à suivre :
-1. Créer d'abord les périmètres racines (sans parent) :
-   - Nom: Afrique, Type: GEOGRAPHIC, Parent: None (root level)
-   - Nom: Europe, Type: GEOGRAPHIC, Parent: None (root level)
-   - Nom: FinTech, Type: SECTORIAL, Parent: None (root level)
-2. Ensuite créer les sous-périmètres :
-   - Nom: Afrique du Nord, Type: GEOGRAPHIC, Parent: Afrique
-   - Nom: Tunisie, Type: GEOGRAPHIC, Parent: Afrique du Nord
+## Structure du Projet
+
+```
+server/backend/src/
+├── main.ts
+├── app.module.ts                 # Module racine (14 modules)
+├── common/                       # Guards, decorators, enums
+├── config/                       # Database, JWT, App config
+├── prisma/                       # Schema + service Prisma
+└── modules/
+    ├── auth/                     # Inscription, connexion, JWT
+    ├── users/                    # CRUD utilisateurs
+    ├── organizations/            # Multi-tenancy
+    ├── projects/                 # Entité centrale
+    ├── objectives/               # Objectifs stratégiques
+    ├── axes/                     # Axes d'analyse
+    ├── hypotheses/               # Hypothèses + validation IA
+    ├── perimeters/               # Contextes (géographique, sectoriel)
+    ├── collection-plans/         # Plans de collecte
+    ├── collection-engine/        # Orchestration pipeline IA
+    │   ├── services/             # 18 services
+    │   ├── connectors/           # RSS, Web, PDF
+    │   └── utils/                # text.utils, ai.utils
+    ├── raw-data/                 # Données collectées
+    ├── audit/                    # Logs d'activité
+    └── ... (insights, recommendations, signals, etc.)
+```
+
+## Exemple Concret
+
+```bash
+# 1. Créer un projet
+curl -X POST http://localhost:3000/api/projects \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <TOKEN>" \
+  -d '{"name":"IA Santé 2026","veilleType":"TECHNOLOGIQUE"}'
+
+# 2. Ajouter un objectif + axe + hypothèse
+curl -X POST http://localhost:3000/api/hypotheses \
+  -H "Authorization: Bearer <TOKEN>" \
+  -d '{"content":"LIA générative va transformer le diagnostic","priority":1,"axisId":"<axis_id>"}'
+
+# 3. Créer un plan de collecte avec sources
+curl -X POST http://localhost:3000/api/collection-plans \
+  -H "Authorization: Bearer <TOKEN>" \
+  -d '{"question":"Quelles sont les dernières avancées?","frequency":"DAILY","hypothesisId":"<hyp_id>"}'
+
+# 4. Ajouter des mots-clés et sources
+curl -X POST http://localhost:3000/api/collection-plans/<plan_id>/keywords \
+  -H "Authorization: Bearer <TOKEN>" \
+  -d '{"keyword":"AI diagnostic","keywordType":"INCLUDE"}'
+
+# 5. Déclencher la collecte
+curl -X POST http://localhost:3000/api/collection-engine/trigger/<plan_id> \
+  -H "Authorization: Bearer <TOKEN>"
+```
+
+Le système collecte, filtre, score, analyse via IA (Mistral → Groq → Fallback algorithmique), génère des insights et met à jour les hypothèses automatiquement.
+
+## Documentation Complète
+
+Voir [PROJECT_DOCUMENTATION.md](./PROJECT_DOCUMENTATION.md) pour la documentation exhaustive.
